@@ -8,7 +8,8 @@ internal fun getId(): Long {
     return lastId++
 }
 
-class DonationMemStore : DonationStore {
+object DonationManager : DonationStore
+ {
 
     val donations = ArrayList<DonationModel>()
 

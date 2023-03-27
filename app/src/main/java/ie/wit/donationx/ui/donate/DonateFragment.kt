@@ -2,6 +2,7 @@ package ie.wit.donationx.ui.donate
 
 import android.os.Bundle
 import android.view.*
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
@@ -10,40 +11,37 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.NavigationUI
 import ie.wit.donationx.R
 import ie.wit.donationx.databinding.FragmentDonateBinding
 import ie.wit.donationx.main.DonationXApp
 import ie.wit.donationx.models.DonationModel
+import ie.wit.donationx.ui.report.ReportViewModel
 
 class DonateFragment : Fragment() {
 
-    lateinit var app: DonationXApp
-    private var totalDonated = 0
+    var totalDonated = 0
     private var _fragBinding: FragmentDonateBinding? = null
     // This property is only valid between onCreateView and onDestroyView.
     private val fragBinding get() = _fragBinding!!
-    //lateinit var navController: NavController
     private lateinit var donateViewModel: DonateViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        app = activity?.application as DonationXApp
-        //setHasOptionsMenu(true)
-        //navController = Navigation.findNavController(activity!!, R.id.nav_host_fragment)
+        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View {
+                              savedInstanceState: Bundle?): View? {
         _fragBinding = FragmentDonateBinding.inflate(inflater, container, false)
         val root = fragBinding.root
         activity?.title = getString(R.string.action_donate)
         setupMenu()
-        donateViewModel =
-                ViewModelProvider(this).get(DonateViewModel::class.java)
-        //val textView: TextView = root.findViewById(R.id.text_home)
-        donateViewModel.text.observe(viewLifecycleOwner, Observer {
-            //textView.text = it
+
+        donateViewModel = ViewModelProvider(this).get(DonateViewModel::class.java)
+        donateViewModel.observableStatus.observe(viewLifecycleOwner, Observer {
+                status -> status?.let { render(status) }
         })
 
         fragBinding.progressBar.max = 10000
@@ -67,24 +65,26 @@ class DonateFragment : Fragment() {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_donate, menu)
             }
-
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 // Validate and handle the selected menu item
                 return NavigationUI.onNavDestinationSelected(menuItem,
                     requireView().findNavController())
-            }
-        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+            }       }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    companion object {
-        @JvmStatic
-        fun newInstance() =
-                DonateFragment().apply {
-                    arguments = Bundle().apply {}
+    private fun render(status: Boolean) {
+        when (status) {
+            true -> {
+                view?.let {
+                    //Uncomment this if you want to immediately return to Report
+                    //findNavController().popBackStack()
                 }
+            }
+            false -> Toast.makeText(context,getString(R.string.donationError),Toast.LENGTH_LONG).show()
+        }
     }
 
-    private fun setButtonListener(layout: FragmentDonateBinding) {
+    fun setButtonListener(layout: FragmentDonateBinding) {
         layout.donateButton.setOnClickListener {
             val amount = if (layout.paymentAmount.text.isNotEmpty())
                 layout.paymentAmount.text.toString().toInt() else layout.amountPicker.value
@@ -95,34 +95,24 @@ class DonateFragment : Fragment() {
                 totalDonated += amount
                 layout.totalSoFar.text = getString(R.string.totalSoFar,totalDonated)
                 layout.progressBar.progress = totalDonated
-                app.donationsStore.create(DonationModel(paymentmethod = paymentmethod,amount = amount))
+                donateViewModel.addDonation(DonationModel(1, paymentmethod = paymentmethod,totalDonated))
             }
+
         }
-    }
-
-//    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-//        inflater.inflate(R.menu.menu_donate, menu)
-//        super.onCreateOptionsMenu(menu, inflater)
-//    }
-//
-//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-//        return NavigationUI.onNavDestinationSelected(item,
-//                requireView().findNavController()) || super.onOptionsItemSelected(item)
-//    }
-
-//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-//        return item.onNavDestinationSelected(navController) || super.onOptionsItemSelected(item)
-//    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _fragBinding = null
     }
 
     override fun onResume() {
         super.onResume()
-        totalDonated = app.donationsStore.findAll().sumOf { it.amount }
-        fragBinding.progressBar.progress = totalDonated
-        fragBinding.totalSoFar.text = getString(R.string.totalSoFar,totalDonated)
+        val reportViewModel = ViewModelProvider(this).get(ReportViewModel::class.java)
+        reportViewModel.observableDonationsList.observe(viewLifecycleOwner, Observer {
+            totalDonated = reportViewModel.observableDonationsList.value!!.sumOf { it.amount }
+            fragBinding.progressBar.progress = totalDonated
+            fragBinding.totalSoFar.text = getString(R.string.totalSoFar,totalDonated)
+        })
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _fragBinding = null
     }
 }

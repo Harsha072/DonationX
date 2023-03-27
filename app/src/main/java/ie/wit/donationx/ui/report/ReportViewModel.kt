@@ -3,11 +3,21 @@ package ie.wit.donationx.ui.report
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import ie.wit.donationx.models.DonationManager
+import ie.wit.donationx.models.DonationModel
 
 class ReportViewModel : ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is gallery Fragment"
+    private val donationsList = MutableLiveData<List<DonationModel>>()
+
+    val observableDonationsList: LiveData<List<DonationModel>>
+        get() = donationsList
+
+    init {
+        load()
     }
-    val text: LiveData<String> = _text
+
+    fun load() {
+        donationsList.value = DonationManager.findAll()
+    }
 }

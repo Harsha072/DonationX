@@ -12,7 +12,7 @@
             android:icon="@drawable/ic_menu_report"
             android:title="@string/action_report" />
         <item
-            android:id="@+id/aboutusFragment"
+            android:id="@+id/aboutFragment"
             android:icon="@drawable/ic_menu_aboutus"
             android:title="@string/action_about" />
     </group>
