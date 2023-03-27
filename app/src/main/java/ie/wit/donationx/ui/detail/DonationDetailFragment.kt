@@ -12,7 +12,6 @@ import ie.wit.donationx.R
 
 class DonationDetailFragment : Fragment() {
     private val args by navArgs<DonationDetailFragmentArgs>()
-
     companion object {
         fun newInstance() = DonationDetailFragment()
     }
